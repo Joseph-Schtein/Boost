@@ -2,35 +2,70 @@ using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+
 public class CollisionHandler : MonoBehaviour
 {
-    
+    [SerializeField] float Delaye = 1f;
+    [SerializeField] AudioClip Fail;
+    [SerializeField] AudioClip Success;
+
+    bool isTransitioning;
+    AudioSource StatusAudio;
+
+    void Start()
+    {
+        isTransitioning = false;
+        StatusAudio = GetComponent<AudioSource>();
+    }
+
     private void OnCollisionEnter(UnityEngine.Collision other)
     {
-        switch (other.gameObject.tag)
+        if (!isTransitioning)
         {
-            case "Respawn":
-                Debug.Log("Respawn");
-                break;
+            switch (other.gameObject.tag)
+            {
+                case "Respawn":
+                    Debug.Log("Respawn");
+                    break;
 
-            case "Finish":
-                LoadNextLevel();
-                break;
+                case "Finish":
+                    StartSuccessSequence();
+                    break;
 
-            case "Obstacle":
-                Debug.Log("Obstacle");
-                ReloadLevel();
-                break;
-
-            default:
-                Debug.Log("unknowen");
-                ReloadLevel();
-                break;
+                default:
+                    Debug.Log("Obstecal or Ground");
+                    StartCrashSequence();
+                    break;
+            }
         }
     }
-    void ReloadLevel()
+
+    public void StartSuccessSequence()
     {
-        //SceneManager.LoadScene(0);
+        isTransitioning = true;
+        StatusAudio.Stop();
+        StatusAudio.PlayOneShot(Success);
+        //To add an effect
+        GetComponent<Movement>().enabled = false;// We want to forbide the rocket to fly
+                                                 // After a success, so we change the movment to false
+        Invoke("LoadNextLevel", Delaye);
+        
+    }
+
+
+    public void StartCrashSequence()
+    {
+        isTransitioning = true;
+        StatusAudio.Stop();
+        StatusAudio.PlayOneShot(Fail);
+        //To add an effect
+        GetComponent<Movement>().enabled = false;  // We want to forbide the rocket to fly
+                                                   // After a fail, so we change the movment to false
+        Invoke("ReloadLevel", Delaye);       
+    }
+
+    void ReloadLevel()
+    {     
         int sceneNumber = SceneManager.GetActiveScene().buildIndex;
         SceneManager.LoadScene(sceneNumber);
     }
@@ -46,7 +81,9 @@ public class CollisionHandler : MonoBehaviour
         else
         {
             SceneManager.LoadScene(0);
+            StatusAudio.Stop();
         }
+        
     }
 
     bool LoadFirstLevel()
